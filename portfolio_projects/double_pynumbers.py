@@ -4,7 +4,7 @@ import time
 # Method to read entire file into memory before processing it
 def read_all():
 
-    with open("file4.txt", "r") as f:
+    with open("file2.txt", "r") as f:
 
         content = f.readlines()
 
@@ -25,7 +25,7 @@ def read_all():
 def line_by_line():
 
     # read file line by line
-    with open('file4.txt', 'r') as infile, open('output_method2.txt', 'w') as outfile:
+    with open('file2.txt', 'r') as infile, open('output_method2.txt', 'w') as outfile:
         for line in infile:
             stripped = line.strip()
             if stripped:
@@ -38,7 +38,7 @@ def line_by_line():
 def split_file():
 
     #  Read original and split into two files
-    with open('file4.txt', 'r') as original:
+    with open('file2.txt', 'r') as original:
         lines = []
         for line in original:
             stripped = line.strip()
