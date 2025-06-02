@@ -1,10 +1,10 @@
 import random
 import time
 
-file = open("file4.txt", "w")
+file = open("file2.txt", "w")
 start_time = time.time()
-for i in range(1000000):
-    random_number = random.randint(0,100000)
+for i in range(10000000):
+    random_number = random.randint(1,100000)
     file.write(str(random_number))
     file.write("\n")
 file.close()
