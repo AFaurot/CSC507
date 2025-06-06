@@ -86,15 +86,22 @@ def main():
     print(f"Splitting input files into {CHUNKS} parts...")
     split_file_streaming(FILE1, SPLIT_DIR1, CHUNKS)
     split_file_streaming(FILE2, SPLIT_DIR2, CHUNKS)
+    end = time.time()
+    print(f"Splitting took {end - start:.2f} seconds")
 
+    p_start = time.time()
     print("Processing file chunks in parallel...")
     parallel_process_file_pairs()
+    p_end = time.time()
+    print(f"Processing took {p_end - p_start:.2f} seconds")
 
+    c_start = time.time()
     print("Combining output files into final result...")
     combine_outputs()
-
-    end = time.time()
-    print(f"✅ Done. Processing took {end - start:.2f} seconds")
+    final_end = time.time()
+    print(f"Combining took {final_end - c_start:.2f} seconds")
+    print(f"\nTime after splitting = {final_end - p_start:.2f} seconds")
+    print(f"✅ Done. Total operations took {final_end - start:.2f} seconds")
     clean_dirs()
 
 
