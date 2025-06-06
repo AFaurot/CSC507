@@ -22,7 +22,7 @@ def first_fit(block_sizes, process_sizes):
 def main():
 
     block_sizes = [100, 200, 400, 300, 600]
-    process_sizes = [112, 242, 50, 312, 160]
+    process_sizes = [112, 242, 50, 312, 160, 140]
 
     print("----CSC 507: First Fit Simulation----")
     print("\nAvailable blocks", block_sizes)
