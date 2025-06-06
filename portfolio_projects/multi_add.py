@@ -5,13 +5,13 @@ from multiprocessing import Pool, cpu_count
 
 CHUNKS = 10  # Adjusted for 4-core VM
 
-FILE1 = 'test_add1.txt'
-FILE2 = 'test_add2.txt'
+FILE1 = 'hugefile1.txt'
+FILE2 = 'hugefile2.txt'
 
 SPLIT_DIR1 = 'splits1'
 SPLIT_DIR2 = 'splits2'
 OUTPUT_DIR = 'outputs'
-FINAL_OUTPUT = 'totalfile.txt'
+FINAL_OUTPUT = 'totalfile2.txt'
 
 
 def clean_dirs():
