@@ -1,11 +1,13 @@
 import os
 import time
+import math
 import shutil
+import platform
 import subprocess
 from multiprocessing import Pool, cpu_count
 from filesplit.split import Split
 
-CHUNKS = 10  # Adjusted for 4-core VM
+CHUNKS = 10  # Adjust as needed for partition size
 
 FILE1 = 'hugefile1.txt'
 FILE2 = 'hugefile2.txt'
@@ -16,30 +18,82 @@ OUTPUT_DIR = 'outputs'
 FINAL_OUTPUT = 'totalfile2.txt'
 
 
-def split_file_with_bash(file_path, output_dir, lines_per_chunk):
+def split_file_auto(file_path, output_dir):
     """
-    Uses the Unix 'split' command to split a file by a fixed number of lines.
-    Renames the output files to match the 'chunk_0.txt' naming convention.
+    Automatically splits a file:
+    - On Windows: uses Python filesplit.
+    - On Unix: uses 'wc -l' to count lines, calculates lines per chunk using CHUNKS.
+      Falls back to Python method if anything fails.
 
     Args:
-        file_path (str): Path to the file to split.
-        output_dir (str): Directory where split files will go.
+        file_path (str): File to split.
+        output_dir (str): Where to put split files.
+    """
+    if platform.system() == 'Windows':
+        print("Detected Windows — using Python-based splitter.")
+        print("Counting lines...")
+        total_lines = count_lines_python(file_path)
+        lines_per_chunk = math.ceil(total_lines / CHUNKS)
+        print(f"{file_path} has {total_lines} lines — splitting into chunks of ~{lines_per_chunk} lines.\n")
+        split_file_by_fixed_lines(file_path, output_dir, lines_per_chunk)
+    else:
+        print("Detected Unix — using 'wc -l' + Bash split.")
+        try:
+            # Use wc -l to count total lines
+            result = subprocess.run(
+                ["/bin/bash", "-c", f"wc -l < '{file_path}'"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            total_lines = int(result.stdout.strip())
+
+            # Compute lines per chunk using global CHUNKS
+            lines_per_chunk = math.ceil(total_lines / CHUNKS)
+
+            print(f"{file_path} has {total_lines} lines — splitting into chunks of ~{lines_per_chunk} lines.\n")
+            split_file_with_bash(file_path, output_dir, lines_per_chunk)
+
+        except (subprocess.CalledProcessError, FileNotFoundError, ValueError) as e:
+            print(f"Bash/wc error: {e}")
+            print("Falling back to Python splitter...")
+            total_lines = count_lines_python(file_path)
+            lines_per_chunk = math.ceil(total_lines / CHUNKS)
+            print(f"{file_path} has {total_lines} lines — splitting into chunks of ~{lines_per_chunk} lines.\n")
+            split_file_by_fixed_lines(file_path, output_dir, lines_per_chunk)
+
+
+# Count lines in file, used in Windows or if wc is not found
+def count_lines_python(file_path):
+    with open(file_path, 'r') as f:
+        return sum(1 for line in f if line.strip())
+
+
+def split_file_with_bash(file_path, output_dir, lines_per_chunk):
+    """
+    Uses Bash's 'split' command to split a file by a fixed number of lines,
+    and renames output files to 'chunk_0.txt', 'chunk_1.txt', etc.
+
+    Args:
+        file_path (str): File to split.
+        output_dir (str): Directory for output chunks.
         lines_per_chunk (int): Number of lines per chunk.
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    # Build the split command
+    # Define prefix for split files (e.g., splits1/chunk_)
     prefix = os.path.join(output_dir, "chunk_")
-    split_cmd = ["split", "-l", str(lines_per_chunk), file_path, prefix]
 
-    # Run the command
+    # Compose the Bash command
+    bash_command = f"split -l {lines_per_chunk} '{file_path}' '{prefix}'"
+
     try:
-        subprocess.run(split_cmd, check=True)
+        subprocess.run(["/bin/bash", "-c", bash_command], check=True)
     except subprocess.CalledProcessError as e:
-        print(f"Error during split: {e}")
+        print(f"Bash split failed: {e}")
         return
 
-    # Rename output files (chunk_aa → chunk_0.txt, chunk_ab → chunk_1.txt, ...)
+    # Rename split output (chunk_aa → chunk_0.txt, etc.)
     files = sorted(os.listdir(output_dir))
     for idx, filename in enumerate(files):
         src = os.path.join(output_dir, filename)
@@ -74,36 +128,14 @@ def split_file_by_fixed_lines(file_path, output_dir, lines_per_chunk):
         dst = os.path.join(output_dir, f"chunk_{count}.txt")
         os.rename(src, dst)
 
+
 def clean_dirs():
     for d in [SPLIT_DIR1, SPLIT_DIR2, OUTPUT_DIR]:
         if os.path.exists(d):
             shutil.rmtree(d)
+    # Uncomment below lines to remove the outputted file
     # if os.path.exists(FINAL_OUTPUT):
     #     os.remove(FINAL_OUTPUT)
-
-
-def split_file_streaming(file_path, output_dir, chunks):
-    os.makedirs(output_dir, exist_ok=True)
-
-    # First count lines to determine chunk size
-    with open(file_path, 'r') as f:
-        total_lines = sum(1 for line in f if line.strip())
-
-    lines_per_chunk = (total_lines + chunks - 1) // chunks  # ceiling division
-
-    # Now split the file sequentially
-    with open(file_path, 'r') as f:
-        for chunk_index in range(chunks):
-            output_path = os.path.join(output_dir, f"chunk_{chunk_index}.txt")
-            with open(output_path, 'w') as chunk_file:
-                written = 0
-                while written < lines_per_chunk:
-                    line = f.readline()
-                    if not line:
-                        break
-                    if line.strip():
-                        chunk_file.write(line)
-                        written += 1
 
 
 def process_file_pair(index):
@@ -142,12 +174,12 @@ def parallel_process_file_pairs():
 
 
 def main():
-
     clean_dirs()
     start = time.time()
     print(f"Splitting input files into {CHUNKS} parts...")
-    split_file_by_fixed_lines('hugefile1.txt', 'splits1', 100)
-    split_file_by_fixed_lines('hugefile2.txt', 'splits2', 100)
+    # Automatically choose best file splitting method depending on OS
+    split_file_auto(FILE1, SPLIT_DIR1)
+    split_file_auto(FILE2, SPLIT_DIR2)
     end = time.time()
     print(f"Splitting took {end - start:.2f} seconds")
 
@@ -163,7 +195,7 @@ def main():
     final_end = time.time()
     print(f"Combining took {final_end - c_start:.2f} seconds")
     print(f"\nTime after splitting = {final_end - p_start:.2f} seconds")
-    print(f"✅ Done. Total operations took {final_end - start:.2f} seconds")
+    print(f"Done. Total operations took {final_end - start:.2f} seconds")
     clean_dirs()
 
 
