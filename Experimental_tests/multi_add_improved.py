@@ -1,6 +1,7 @@
 import os
 import time
 import shutil
+import subprocess
 from multiprocessing import Pool, cpu_count
 from filesplit.split import Split
 
@@ -13,6 +14,37 @@ SPLIT_DIR1 = 'splits1'
 SPLIT_DIR2 = 'splits2'
 OUTPUT_DIR = 'outputs'
 FINAL_OUTPUT = 'totalfile2.txt'
+
+
+def split_file_with_bash(file_path, output_dir, lines_per_chunk):
+    """
+    Uses the Unix 'split' command to split a file by a fixed number of lines.
+    Renames the output files to match the 'chunk_0.txt' naming convention.
+
+    Args:
+        file_path (str): Path to the file to split.
+        output_dir (str): Directory where split files will go.
+        lines_per_chunk (int): Number of lines per chunk.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Build the split command
+    prefix = os.path.join(output_dir, "chunk_")
+    split_cmd = ["split", "-l", str(lines_per_chunk), file_path, prefix]
+
+    # Run the command
+    try:
+        subprocess.run(split_cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error during split: {e}")
+        return
+
+    # Rename output files (chunk_aa → chunk_0.txt, chunk_ab → chunk_1.txt, ...)
+    files = sorted(os.listdir(output_dir))
+    for idx, filename in enumerate(files):
+        src = os.path.join(output_dir, filename)
+        dst = os.path.join(output_dir, f"chunk_{idx}.txt")
+        os.rename(src, dst)
 
 
 def split_file_by_fixed_lines(file_path, output_dir, lines_per_chunk):
