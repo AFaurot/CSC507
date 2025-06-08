@@ -5,7 +5,7 @@ CSC507 Repository
 ## Description
 
 Programming assignments from CSC507 class
-The portfolio project contains two Milestones. Portfolio Project and Portfolio Milestones
+The portfolio project contains two directories. Portfolio Project and Portfolio Milestones
 
 ### Prerequisites 
 
