@@ -1,19 +1,10 @@
 import time
-import math
-
-
-# add_cpu_load to add some computational overhead
-def add_cpu_load(number):
-    result = 0
-    for i in range(10):
-        result += math.ceil(math.sqrt(number) * math.log(number))
-    return result
 
 
 # Method to read entire file into memory before processing it
 def read_all():
 
-    with open("file2.txt", "r") as f:
+    with open("../file2.txt", "r") as f:
 
         content = f.readlines()
 
@@ -22,11 +13,10 @@ def read_all():
         stripped = line.strip()
         if stripped:
             number = int(stripped)
-            add_me = add_cpu_load(number)
-            result = (number * 2) + add_me
+            result = number * 2
             doubled.append(str(result))
     # Write file
-    with open('output_method1.txt', 'w') as f:
+    with open('../output_method1.txt', 'w') as f:
         for value in doubled:
             f.write(value + '\n')
 
@@ -35,13 +25,12 @@ def read_all():
 def line_by_line():
 
     # read file line by line
-    with open('file2.txt', 'r') as infile, open('output_method2.txt', 'w') as outfile:
+    with open('../file2.txt', 'r') as infile, open('../output_method2.txt', 'w') as outfile:
         for line in infile:
             stripped = line.strip()
             if stripped:
                 number = int(stripped)
-                add_me = add_cpu_load(number)
-                result = (number * 2) + add_me
+                result = number * 2
                 outfile.write(str(result) + '\n')
 
 
@@ -49,7 +38,7 @@ def line_by_line():
 def split_file():
 
     #  Read original and split into two files
-    with open('file2.txt', 'r') as original:
+    with open('../file2.txt', 'r') as original:
         lines = []
         for line in original:
             stripped = line.strip()
@@ -60,11 +49,11 @@ def split_file():
     part1_lines = lines[:midpoint]
     part2_lines = lines[midpoint:]
 
-    with open('file_part1.txt', 'w') as f1:
+    with open('../file_part1.txt', 'w') as f1:
         for line in part1_lines:
             f1.write(line + '\n')
 
-    with open('file_part2.txt', 'w') as f2:
+    with open('../file_part2.txt', 'w') as f2:
         for line in part2_lines:
             f2.write(line + '\n')
 
@@ -77,11 +66,10 @@ def split_file():
                 stripped = line.strip()
                 if stripped:
                     number = int(stripped)
-                    add_me = add_cpu_load(number)
-                    result = (number * 2) + add_me
+                    result = number * 2
                     doubled.append(str(result))
 
-    with open('output_method3.txt', 'w') as f:
+    with open('../output_method3.txt', 'w') as f:
         for value in doubled:
             f.write(value + '\n')
 
@@ -112,7 +100,5 @@ def main():
     print(f"Method 2 took {l_execution_time} seconds")
     print(f"Method 3 took {s_execution_time} seconds")
 
-
-if __name__ == '__main__':
-    main()
+if __name__ == '__main__': main()
 

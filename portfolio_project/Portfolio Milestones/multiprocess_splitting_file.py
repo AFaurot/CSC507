@@ -6,7 +6,7 @@ from multiprocessing import Pool, cpu_count
 
 CHUNKS = 20  # Number of split files
 
-INPUT_FILE = 'file2.txt'
+INPUT_FILE = '../file2.txt'
 SPLIT_DIR = 'splits'
 OUTPUT_DIR = 'outputs'
 FINAL_OUTPUT = 'output_parallel.txt'
