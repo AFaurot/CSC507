@@ -1,7 +1,7 @@
 import os
 import time
 import shutil
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, cpu_count, Process
 
 CHUNKS = 10  # Adjusted for 4-core VM
 
@@ -84,8 +84,14 @@ def parallel_process_file_pairs():
 def main():
     start = time.time()
     print(f"Splitting input files into {CHUNKS} parts...")
-    split_file_streaming(FILE1, SPLIT_DIR1, CHUNKS)
-    split_file_streaming(FILE2, SPLIT_DIR2, CHUNKS)
+
+    p1 = Process(target=split_file_streaming, args=(FILE1, SPLIT_DIR1, CHUNKS))
+    p2 = Process(target=split_file_streaming, args=(FILE2, SPLIT_DIR2, CHUNKS))
+
+    p1.start()
+    p2.start()
+    p1.join()
+    p2.join()
     end = time.time()
     print(f"Splitting took {end - start:.2f} seconds")
 
@@ -101,7 +107,7 @@ def main():
     final_end = time.time()
     print(f"Combining took {final_end - c_start:.2f} seconds")
     print(f"\nTime after splitting = {final_end - p_start:.2f} seconds")
-    print(f"✅ Done. Total operations took {final_end - start:.2f} seconds")
+    print(f"Done. Total operations took {final_end - start:.2f} seconds")
     clean_dirs()
 
 

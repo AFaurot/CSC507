@@ -4,7 +4,7 @@ import math
 import shutil
 import platform
 import subprocess
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, cpu_count, Process
 from filesplit.split import Split
 
 CHUNKS = 10  # Adjust as needed for partition size
@@ -18,10 +18,15 @@ OUTPUT_DIR = 'outputs'
 FINAL_OUTPUT = 'totalfile2.txt'
 
 
+def is_wsl_available():
+    return shutil.which('wsl') is not None
+
+
+# Example usage
 def split_file_auto(file_path, output_dir):
     """
     Automatically splits a file:
-    - On Windows: uses Python filesplit.
+    - On Windows: uses Python filesplit or WSL split.
     - On Unix: uses 'wc -l' to count lines, calculates lines per chunk using CHUNKS.
       Falls back to Python method if anything fails.
 
@@ -30,12 +35,38 @@ def split_file_auto(file_path, output_dir):
         output_dir (str): Where to put split files.
     """
     if platform.system() == 'Windows':
-        print("Detected Windows — using Python-based splitter.")
-        print("Counting lines...")
-        total_lines = count_lines_python(file_path)
-        lines_per_chunk = math.ceil(total_lines / CHUNKS)
-        print(f"{file_path} has {total_lines} lines — splitting into chunks of ~{lines_per_chunk} lines.\n")
-        split_file_by_fixed_lines(file_path, output_dir, lines_per_chunk)
+        if is_wsl_available():
+            print("Detected Windows and WSL— using WSL-based splitter.")
+            try:
+                # Use wc -l to count total lines
+                result = subprocess.run(
+                    ["wsl", "-e", "bash", "-c", f"wc -l < '{file_path}'"],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                total_lines = int(result.stdout.strip())
+
+                # Compute lines per chunk using global CHUNKS
+                lines_per_chunk = math.ceil(total_lines / CHUNKS)
+
+                print(f"{file_path} has {total_lines} lines — splitting into chunks of ~{lines_per_chunk} lines.\n")
+                split_file_with_wsl(file_path, output_dir, lines_per_chunk)
+
+            except (subprocess.CalledProcessError, FileNotFoundError, ValueError) as e:
+                print(f"Bash/wc error: {e}")
+                print("Falling back to Python splitter...")
+                total_lines = count_lines_python(file_path)
+                lines_per_chunk = math.ceil(total_lines / CHUNKS)
+                print(f"{file_path} has {total_lines} lines — splitting into chunks of ~{lines_per_chunk} lines.\n")
+                split_file_by_fixed_lines(file_path, output_dir, lines_per_chunk)
+        else:
+            print("Detected Windows — using Python-based splitter.")
+            print("Counting lines...")
+            total_lines = count_lines_python(file_path)
+            lines_per_chunk = math.ceil(total_lines / CHUNKS)
+            print(f"{file_path} has {total_lines} lines — splitting into chunks of ~{lines_per_chunk} lines.\n")
+            split_file_by_fixed_lines(file_path, output_dir, lines_per_chunk)
     else:
         print("Detected Unix — using 'wc -l' + Bash split.")
         try:
@@ -67,6 +98,38 @@ def split_file_auto(file_path, output_dir):
 def count_lines_python(file_path):
     with open(file_path, 'r') as f:
         return sum(1 for line in f if line.strip())
+
+
+def split_file_with_wsl(file_path, output_dir, lines_per_chunk):
+    """
+    Uses Bash's 'split' command inside WSL to split a file by a fixed number of lines,
+    and renames output files to 'chunk_0.txt', 'chunk_1.txt', etc.
+
+    Args:
+        file_path (str): File to split.
+        output_dir (str): Directory for output chunks.
+        lines_per_chunk (int): Number of lines per chunk.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Define prefix for split files (e.g., splits1/chunk_)
+    prefix = f"{output_dir}/chunk_"
+
+    # Compose the Bash command
+    bash_command = f"split -l {lines_per_chunk} '{file_path}' '{prefix}'"
+
+    try:
+        subprocess.run(["wsl", "-e", "bash", "-c", bash_command], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"wsl split failed: {e}")
+        return
+
+    # Rename split output (chunk_aa → chunk_0.txt, etc.)
+    files = sorted(os.listdir(output_dir))
+    for idx, filename in enumerate(files):
+        src = os.path.join(output_dir, filename)
+        dst = os.path.join(output_dir, f"chunk_{idx}.txt")
+        os.rename(src, dst)
 
 
 def split_file_with_bash(file_path, output_dir, lines_per_chunk):
@@ -175,11 +238,21 @@ def parallel_process_file_pairs():
 
 def main():
     clean_dirs()
+    if is_wsl_available():
+        print("WSL is available in PATH.")
+    else:
+        print("WSL not found in PATH.")
+
     start = time.time()
     print(f"Splitting input files into {CHUNKS} parts...")
     # Automatically choose best file splitting method depending on OS
-    split_file_auto(FILE1, SPLIT_DIR1)
-    split_file_auto(FILE2, SPLIT_DIR2)
+    p1 = Process(target=split_file_auto, args=(FILE1, SPLIT_DIR1))
+    p2 = Process(target=split_file_auto, args=(FILE2, SPLIT_DIR2))
+
+    p1.start()
+    p2.start()
+    p1.join()
+    p2.join()
     end = time.time()
     print(f"Splitting took {end - start:.2f} seconds")
 

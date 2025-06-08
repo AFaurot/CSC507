@@ -1,7 +1,7 @@
 import time
 
 
-# streaming test
+# Function to add two files together using streaming
 def add_files_streaming(input1, input2, output):
     with open(input1, 'r') as f1, open(input2, 'r') as f2, open(output, 'w') as out:
         for line1, line2 in zip(f1, f2):
@@ -18,7 +18,7 @@ def add_files_streaming(input1, input2, output):
 
 def main():
     start = time.time()
-    add_files_streaming("test_add1.txt", "test_add2.txt", "summation.txt")
+    add_files_streaming("hugefile1.txt", "hugefile2.txt", "summation.txt")
     end = time.time()
     print(f"Processing took {end - start:.2f} seconds")
 
