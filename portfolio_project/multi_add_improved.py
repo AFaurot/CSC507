@@ -238,11 +238,6 @@ def parallel_process_file_pairs():
 
 def main():
     clean_dirs()
-    if is_wsl_available():
-        print("WSL is available in PATH.")
-    else:
-        print("WSL not found in PATH.")
-
     start = time.time()
     print(f"Splitting input files into {CHUNKS} parts...")
     # Automatically choose best file splitting method depending on OS
