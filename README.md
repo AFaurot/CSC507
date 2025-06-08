@@ -1,4 +1,4 @@
-# Project Title
+# CSC507
 
 CSC507 Repository
 
