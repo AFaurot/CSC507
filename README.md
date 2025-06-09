@@ -24,3 +24,9 @@ filesplit - pip install filesplit (virtual env required for Ubuntu)
 WSL for Windows - follow this document https://learn.microsoft.com/en-us/windows/wsl/install
 
 Python venv documentation - https://docs.python.org/3/library/venv.html
+
+## Usage
+
+The portfolio project scripts expect the source data to be in the same directory and have the same line count
+
+You can generate data using pynumbers.sh if you want and run it twice, altering paramaters as needed.
